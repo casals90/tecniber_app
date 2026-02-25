@@ -3,6 +3,7 @@ import io
 import logging
 import os
 import platform
+from datetime import datetime
 
 from pypdf import PdfReader, PdfWriter
 from reportlab.lib.colors import white
@@ -90,19 +91,18 @@ class TicketFiller:
         self,
         input_path: str,
         output_path: str,
-        date1: str = "",
-        time1: str = "",
-        date2: str = "",
-        time2: str = "",
-        dni:   str = ""
+        date1: datetime.date,
+        time1: datetime.time,
+        time2: datetime.time,
+        dni: str = ""
     ) -> None:
         self.input_path = input_path
         self.output_path = output_path
 
-        self.date1 = date1
-        self.time1 = time1
-        self.date2 = date2
-        self.time2 = time2
+        self.date1 = date1.strftime("%d . %m . %Y")
+        self.time1 = time1.strftime("%H : %M : %S")
+        self.date2 = self.date1
+        self.time2 = time2.strftime("%H : %M : %S")
         self.dni = dni
 
         # fallback

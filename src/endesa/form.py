@@ -42,7 +42,7 @@ TEXT_FIELDS: dict[str, TextField] = {
     "company":     TextField(rect=(385.20, 334.79, 547.46, 344.95)),
     "client":      TextField(rect=(65.50,  322.10, 286.56, 332.37)),
     "address":     TextField(rect=(332.38, 322.07, 547.44, 332.33)),
-    "data":        TextField(rect=(26.26,   52.50, 101.25,  74.65)),
+    "date":        TextField(rect=(26.26,   52.50, 101.25,  74.65)),
     "dni":         TextField(rect=(132.04,  27.91, 279.73,  39.48)),
 }
 
@@ -81,7 +81,10 @@ class EndesaFormFiller:
     ) -> None:
         self._input_path = input_path
         self._output_path = output_path
-        self._parsed_fields = self._parse_fields(fields)
+
+        cleaned_fields = self._clean_fields(fields)
+        self._parsed_fields = self._parse_fields(cleaned_fields)
+
         self._font_name = self._register_font()
 
     # ------------------------------------------------------------------
@@ -117,6 +120,62 @@ class EndesaFormFiller:
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _clean_fields(fields: dict[str, Any]) -> dict[str, Any]:
+        """
+        input_dict = {
+        "num_service": {
+            "value": "12035237"
+        },
+        "start_time": {
+            "value": "10:30"
+        },
+        "end_time": {
+            "value": "11:10"},
+        "technician": {
+            "value": "Josep Pons"},
+        "company": {"value": "PBN290"},
+        "client": {"value": "Alba Aumtell"},
+        "address": {"value": "C/ Falsa 123"},
+        "data": {
+            "value": "11/02/2026",
+            "styles": {"font_size": 12}
+        },
+        "dni": {
+            "value": "12345678T",
+            "styles": {"font_size": 18}
+        }
+    }
+        """
+        cleaned_fields = {
+            "num_service": {
+                "value": fields.get("service_num")
+            },
+            "start_time": {
+                "value": fields.get("start_time")
+            },
+            "end_time": {
+                "value": fields.get("end_time")},
+            "technician": {
+                "value": fields.get("technician")},
+            "company": {
+                "value": fields.get("company", "FAKE")},
+            "client": {
+                "value": fields.get("client")},
+            "address": {
+                "value": fields.get("address")},
+            "date": {
+                "value": fields.get("service_date"),
+                "styles": {"font_size": 12}
+            },
+            "dni": {
+                "value": fields.get("dni"),
+                "styles": {"font_size": 18}
+            }
+        }
+
+        return cleaned_fields
 
     @staticmethod
     def _parse_fields(

@@ -3,9 +3,13 @@ import pathlib
 
 import streamlit as st
 
+from src.core import process
 
-def get_base64_image(file_path):
-    """Reads a local image and converts it to base64 for HTML embedding."""
+
+def get_base64_image(file_path: str) -> str:
+    """
+    Reads a local image and converts it to base64 for HTML embedding.
+    """
     try:
         with open(file_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode("utf-8")
@@ -15,7 +19,9 @@ def get_base64_image(file_path):
 
 
 def render_service_registration_form(form_key):
-    """Renders the UI form and returns the gathered data upon interaction."""
+    """
+    Renders the UI form and returns the gathered data upon interaction.
+    """
 
     st.markdown("### 📋 Registre de Serveis")
     st.caption("Introdueix les dades del servei")
@@ -90,11 +96,9 @@ def render_service_registration_form(form_key):
 
 
 def main():
-    """Main application controller."""
-
     # Page configuration (MUST be the first Streamlit command)
-    st.set_page_config(page_title="Registre de Serveis",
-                       page_icon="📋", layout="wide")
+    st.set_page_config(
+        page_title="Registre de Serveis", page_icon="📋", layout="wide")
 
     # Initialize form key for the clear functionality
     if "form_key" not in st.session_state:
@@ -102,7 +106,7 @@ def main():
 
     # --- LOAD LOGO ---
     # Ensure this path matches exactly where your logo is located
-    logo_path = pathlib.Path("resources") / "images" / "logotecniber.png"
+    logo_path = pathlib.Path("resources") / "logotecniber.png"
     logo_base64 = get_base64_image(logo_path)
 
     # --- INJECT CUSTOM CSS AND FIXED HEADER ---
@@ -159,7 +163,7 @@ def main():
 
     # --- FORM PLACEMENT ---
     # Centering the form by using empty columns on the sides
-    spacer_left, main_content, spacer_right = st.columns([1, 3, 1])
+    _, main_content, _ = st.columns([1, 3, 1])
 
     with main_content:
         # Render UI
@@ -196,11 +200,10 @@ def main():
                     st.success(
                         f"✅ Servei **{form_data['service_num']}** generat correctament per al client **{form_data['client']}**!")
 
+                    output_folder = "data"
+                    process.execute(form_data, output_folder)
+
             elif form_result["action"] == "clear":
                 # Increment the key to destroy the old form state, then rerun
                 st.session_state.form_key += 1
                 st.rerun()
-
-
-if __name__ == "__main__":
-    main()
