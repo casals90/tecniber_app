@@ -65,6 +65,15 @@ def render_service_registration_form(form_key):
         with col7:
             dni = st.text_input("DNI *", placeholder="12345678A")
 
+        # ROW 5 - NEW FIELDS
+        col8, col9 = st.columns(2)
+        with col8:
+            images_folder = st.text_input(
+                "Carpeta imatges *", placeholder="C:/ruta/a/les/imatges")
+        with col9:
+            output_folder = st.text_input(
+                "Guardar zip *", value="data", placeholder="C:/ruta/de/sortida")
+
         st.write("")
 
         # BUTTONS
@@ -86,7 +95,9 @@ def render_service_registration_form(form_key):
                 "technician": technician,
                 "address": address,
                 "client": client,
-                "dni": dni
+                "dni": dni,
+                "images_folder": images_folder,
+                "output_folder": output_folder
             }
         }
     elif netejar:
@@ -185,7 +196,9 @@ def main():
                     "technician": "Tècnic",
                     "address": "Adreça",
                     "client": "Client",
-                    "dni": "DNI"
+                    "dni": "DNI",
+                    "images_folder": "Carpeta imatges",
+                    "output_folder": "Guardar zip"
                 }
 
                 # Check for empty values
@@ -200,7 +213,8 @@ def main():
                     st.success(
                         f"✅ Servei **{form_data['service_num']}** generat correctament per al client **{form_data['client']}**!")
 
-                    output_folder = "data"
+                    # Use the dynamically provided output folder from the form instead of hardcoding "data"
+                    output_folder = form_data["output_folder"]
                     process.execute(form_data, output_folder)
 
             elif form_result["action"] == "clear":
