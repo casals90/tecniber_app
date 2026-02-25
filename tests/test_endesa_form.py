@@ -91,8 +91,8 @@ class TestFindHandwritingFont(unittest.TestCase):
             searched.append(pattern)
             return []
 
-        with patch("src.endesa_form.platform.system", return_value=system), \
-                patch("src.endesa_form.glob.glob", side_effect=_glob):
+        with patch("endesa_form.platform.system", return_value=system), \
+                patch("endesa_form.glob.glob", side_effect=_glob):
             find_handwriting_font()
 
         return searched

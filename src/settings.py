@@ -15,4 +15,5 @@ FONT_CANDIDATES = [
     "DejaVuSerif-Italic.ttf",
     "FreeSerifItalic.ttf",
     "FreeSansOblique.ttf",
+    # TODO: Add Windows
 ]
