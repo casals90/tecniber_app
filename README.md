@@ -25,27 +25,25 @@ This project is a streamlined, user-friendly web application built with **Stream
 While your specific architecture may vary, the core application relies on this general structure:
 
 ```text
-├── main.py                  # Main Streamlit frontend application
+├── main.py                  
 ├── resources/
-│   └── logotecniber.png    # Company logo used in the sticky header
-├── data/                  # Default output folder for generated ZIPs/PDFs
+│   └── logotecniber.png    
+├── data/                  
 │   ├── endesa/
 │   │    └── form_template.pdf
 │   ├── ticket/
 │   │    └── ticket_template.pdf
 └── src/
 │   ├── core/
-│   │   └── process.py      # Main execution logic bridging UI and PDF generation
+│   │   └── process.py      
 │   ├── endesa/
-│   │   ├── utils.py        # Helper functions (e.g., finding fonts)
-│   │   └── filler.py       # EndesaFormFiller class
+│   │   ├── utils.py        
+│   │   └── filler.py       
 │   ├── ticket/
-│   │   └── filler.py       # TicketFiller class
-│   └── settings.py         # Global configuration (e.g., DEFAULT_FONT_SIZE)
+│   │   └── filler.py       
+│   └── settings.py         
 ├── pyproject.toml.py
 ```
-
---
 
 ## 🚀 Installation & Setup
 
