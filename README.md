@@ -33,7 +33,7 @@ While your specific architecture may vary, the core application relies on this g
 │   │    └── form_template.pdf
 │   ├── ticket/
 │   │    └── ticket_template.pdf
-└── src/
+│── src/
 │   ├── core/
 │   │   └── process.py      
 │   ├── endesa/
@@ -42,7 +42,7 @@ While your specific architecture may vary, the core application relies on this g
 │   ├── ticket/
 │   │   └── filler.py       
 │   └── settings.py         
-├── pyproject.toml.py
+└── pyproject.toml.py
 ```
 
 ## 🚀 Installation & Setup
