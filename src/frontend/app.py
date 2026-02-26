@@ -270,7 +270,3 @@ def main():
                 # Increment the key to destroy the old form state, then rerun
                 st.session_state.form_key += 1
                 st.rerun()
-
-
-if __name__ == "__main__":
-    main()

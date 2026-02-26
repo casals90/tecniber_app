@@ -67,8 +67,9 @@ def execute(input_data: dict[str, Any], output_folder: pathlib.Path | str) \
     zip_output_path = out_dir / f"Documents-{input_data["service_num"]}.zip"
 
     # Define input template paths
-    template_form_path = pathlib.Path("data") / "endesa" / "form.pdf"
-    template_ticket_path = pathlib.Path("data") / "ticket" / "ticket.pdf"
+    template_form_path = pathlib.Path("data") / "endesa" / "form_template.pdf"
+    template_ticket_path = pathlib.Path(
+        "data") / "ticket" / "ticket_template.pdf"
 
     # Use a temporary directory for the intermediate PDF files
     with tempfile.TemporaryDirectory() as temp_dir:
