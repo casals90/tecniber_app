@@ -17,3 +17,12 @@ FONT_CANDIDATES = [
     "FreeSansOblique.ttf",
     # TODO: Add Windows
 ]
+
+VALID_IMAGE_EXTENSIONS = [
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".webp",
+    ".bmp"
+]

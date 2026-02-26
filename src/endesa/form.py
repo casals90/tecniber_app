@@ -123,31 +123,6 @@ class EndesaFormFiller:
 
     @staticmethod
     def _clean_fields(fields: dict[str, Any]) -> dict[str, Any]:
-        """
-        input_dict = {
-        "num_service": {
-            "value": "12035237"
-        },
-        "start_time": {
-            "value": "10:30"
-        },
-        "end_time": {
-            "value": "11:10"},
-        "technician": {
-            "value": "Josep Pons"},
-        "company": {"value": "PBN290"},
-        "client": {"value": "Alba Aumtell"},
-        "address": {"value": "C/ Falsa 123"},
-        "data": {
-            "value": "11/02/2026",
-            "styles": {"font_size": 12}
-        },
-        "dni": {
-            "value": "12345678T",
-            "styles": {"font_size": 18}
-        }
-    }
-        """
         cleaned_fields = {
             "num_service": {
                 "value": fields.get("service_num")
@@ -172,6 +147,9 @@ class EndesaFormFiller:
             "dni": {
                 "value": fields.get("dni"),
                 "styles": {"font_size": 18}
+            },
+            "signature": {
+                "value": fields.get("signature")
             }
         }
 

@@ -2,6 +2,10 @@ import base64
 import pathlib
 
 import streamlit as st
+from PIL import Image
+
+# 1. NEW IMPORT: Import the canvas component
+from streamlit_drawable_canvas import st_canvas
 
 from src.core import process
 
@@ -43,7 +47,7 @@ def render_service_registration_form(form_key):
         col1, col2, col3 = st.columns(3)
         with col1:
             service_num = st.text_input(
-                "Nº Servei *", value="S-0001", placeholder="S-0001")
+                "Nº Servei *", value=None, placeholder="S-0001")
         with col2:
             start_time = st.time_input("H. Inici *", value=None)
         with col3:
@@ -72,7 +76,30 @@ def render_service_registration_form(form_key):
                 "Carpeta imatges *", placeholder="C:/ruta/a/les/imatges")
         with col9:
             output_folder = st.text_input(
-                "Guardar zip *", value="data", placeholder="C:/ruta/de/sortida")
+                "Guardar zip *", placeholder="C:/ruta/de/sortida")
+
+        st.write("")
+        st.write("")  # Add a little extra breathing room
+
+        # --- 2. NEW SIGNATURE PAD (CENTERED) ---
+        # Center the text label
+        st.markdown(
+            "<p style='text-align: center; font-weight: bold;'>✍️ Signatura del Client *</p>", unsafe_allow_html=True)
+
+        # Use columns to push the canvas to the center
+        # The ratio [1, 2, 1] means the center column is twice as wide as the sides
+        pad_col1, pad_col2, pad_col3 = st.columns([1, 2, 1])
+
+        with pad_col2:
+            canvas_result = st_canvas(
+                stroke_width=3,
+                stroke_color="#000000",
+                background_color="#EEEEEE",
+                height=150,
+                width=400,  # Fixed width to keep it looking like a standard signature box
+                drawing_mode="freedraw",
+                key=f"canvas_{form_key}",
+            )
 
         st.write("")
 
@@ -85,6 +112,21 @@ def render_service_registration_form(form_key):
 
     # --- RETURN DATA FOR MAIN TO HANDLE ---
     if submitted:
+        # Check if the user actually drew something (strokes exist)
+        has_signature = False
+        if canvas_result.json_data is not None:
+            # If the 'objects' list has items, the user drew on the canvas
+            if len(canvas_result.json_data.get("objects", [])) > 0:
+                has_signature = True
+
+        # Convert to image ONLY if they actually signed
+        signature_image = None
+        if has_signature and canvas_result.image_data is not None:
+            # image_data is a numpy array, convert it to a Pillow Image
+            # Using astype(np.uint8) ensures compatibility with PIL
+            signature_image = Image.fromarray(
+                canvas_result.image_data.astype('uint8'))
+
         return {
             "action": "submit",
             "data": {
@@ -97,7 +139,8 @@ def render_service_registration_form(form_key):
                 "client": client,
                 "dni": dni,
                 "images_folder": images_folder,
-                "output_folder": output_folder
+                "output_folder": output_folder,
+                "signature": signature_image  # Will be None if empty
             }
         }
     elif netejar:
@@ -201,10 +244,14 @@ def main():
                     "output_folder": "Guardar zip"
                 }
 
-                # Check for empty values
+                # Check for empty text/date values
                 for key, value in form_data.items():
-                    if value is None or str(value).strip() == "":
-                        empty_fields.append(field_names[key])
+                    if key != "signature" and (value is None or str(value).strip() == ""):
+                        empty_fields.append(field_names.get(key, key))
+
+                # Specifically check if the signature is missing
+                if form_data["signature"] is None:
+                    empty_fields.append("Signatura")
 
                 if empty_fields:
                     st.error(
@@ -213,11 +260,16 @@ def main():
                     st.success(
                         f"✅ Servei **{form_data['service_num']}** generat correctament per al client **{form_data['client']}**!")
 
-                    # Use the dynamically provided output folder from the form instead of hardcoding "data"
                     output_folder = form_data["output_folder"]
+
+                    # Passed validation, safe to execute!
                     process.execute(form_data, output_folder)
 
             elif form_result["action"] == "clear":
                 # Increment the key to destroy the old form state, then rerun
                 st.session_state.form_key += 1
                 st.rerun()
+
+
+if __name__ == "__main__":
+    main()

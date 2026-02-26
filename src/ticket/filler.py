@@ -94,7 +94,8 @@ class TicketFiller:
         date1: datetime.date,
         time1: datetime.time,
         time2: datetime.time,
-        dni: str = ""
+        dni: str,
+        signature,
     ) -> None:
         self.input_path = input_path
         self.output_path = output_path
