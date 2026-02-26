@@ -6,7 +6,9 @@ import os
 from dataclasses import dataclass
 from typing import Any
 
+from PIL import Image
 from pypdf import PdfReader, PdfWriter
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
@@ -44,6 +46,7 @@ TEXT_FIELDS: dict[str, TextField] = {
     "address":     TextField(rect=(332.38, 322.07, 547.44, 332.33)),
     "date":        TextField(rect=(26.26,   52.50, 101.25,  74.65)),
     "dni":         TextField(rect=(132.04,  27.91, 279.73,  39.48)),
+    "signature":   TextField(rect=(132.00,  35.00, 280.00,  70.00)),
 }
 
 
@@ -146,7 +149,7 @@ class EndesaFormFiller:
             },
             "dni": {
                 "value": fields.get("dni"),
-                "styles": {"font_size": 18}
+                "styles": {"font_size": 15}
             },
             "signature": {
                 "value": fields.get("signature")
@@ -157,19 +160,8 @@ class EndesaFormFiller:
 
     @staticmethod
     def _parse_fields(
-            fields: dict[str, Any]) -> dict[str, tuple[str, float | None]]:
-        """Validate and normalise the raw *fields* mapping.
+            fields: dict[str, Any]) -> dict[str, tuple[Any, float | None]]:
 
-        Args:
-            fields: Raw input mapping supplied by the caller.
-
-        Returns:
-            A dict of ``{field_key: (text, font_size_or_none)}``.
-
-        Raises:
-            ValueError: On unknown field keys or malformed entries.
-            TypeError: When ``font_size`` cannot be coerced to ``float``.
-        """
         unknown = set(fields) - set(TEXT_FIELDS)
         if unknown:
             raise ValueError(
@@ -177,7 +169,7 @@ class EndesaFormFiller:
                 f"Valid keys: {set(TEXT_FIELDS)}"
             )
 
-        parsed: dict[str, tuple[str, float | None]] = {}
+        parsed: dict[str, tuple[Any, float | None]] = {}
         for key, entry in fields.items():
             if not isinstance(entry, dict) or "value" not in entry:
                 raise ValueError(
@@ -185,7 +177,15 @@ class EndesaFormFiller:
                     f"key, got: {entry!r}"
                 )
 
-            text = str(entry["value"])
+            # --- UPDATED LOGIC HERE ---
+            val = entry["value"]
+            if isinstance(val, Image.Image):
+                # Clean and crop the signature image
+                content = EndesaFormFiller._clean_signature(val)
+            else:
+                # Convert standard fields to strings
+                content = str(val) if val is not None else ""
+
             styles = entry.get("styles") or {}
             raw_fs = styles.get("font_size")
             font_size: float | None = None
@@ -199,9 +199,34 @@ class EndesaFormFiller:
                         f"number, got {type(raw_fs).__name__!r}: {raw_fs!r}"
                     )
 
-            parsed[key] = (text, font_size)
+            parsed[key] = (content, font_size)
 
         return parsed
+
+    @staticmethod
+    def _clean_signature(img: Image.Image) -> Image.Image:
+        """Removes the gray/white background and crops the empty space."""
+        img = img.convert("RGBA")
+        data = img.getdata()
+
+        new_data = []
+        for item in data:
+            # If the pixel is light-colored (the gray #EEEEEE background or white)
+            # Make it completely transparent
+            if item[0] > 200 and item[1] > 200 and item[2] > 200:
+                new_data.append((255, 255, 255, 0))
+            else:
+                # Make the drawn strokes solid dark blue/black
+                new_data.append((10, 10, 150, 255))
+
+        img.putdata(new_data)
+
+        # Crop the image tightly around the non-transparent pixels
+        bbox = img.getbbox()
+        if bbox:
+            img = img.crop(bbox)
+
+        return img
 
     @staticmethod
     def _register_font() -> str:
@@ -223,31 +248,35 @@ class EndesaFormFiller:
         return "Helvetica-Oblique"
 
     def _build_overlay(self, page_width: float, page_height: float) -> bytes:
-        """Render all text fields onto a transparent ReportLab canvas.
-
-        Args:
-            page_width: Width of the target PDF page in points.
-            page_height: Height of the target PDF page in points.
-
-        Returns:
-            Raw bytes of a single-page PDF containing only the text overlay.
-        """
         buf = io.BytesIO()
         c = canvas.Canvas(buf, pagesize=(page_width, page_height))
         c.setFillColorRGB(*self.INK_COLOR)
 
-        for field_key, (text, font_size) in self._parsed_fields.items():
-            if not text:
+        for field_key, (content, font_size) in self._parsed_fields.items():
+            if not content:
                 continue
 
-            fs = font_size if font_size is not None else DEFAULT_FONT_SIZE
             x0, y0, x1, y1 = TEXT_FIELDS[field_key].rect
+
+            # --- HANDLE SIGNATURE IMAGE ---
+            if isinstance(content, Image.Image):
+                img_reader = ImageReader(content)
+                img_width = x1 - x0
+                img_height = y1 - y0
+
+                # Draw the image in the bounding box. 'mask="auto"' ensures transparent backgrounds work.
+                c.drawImage(img_reader, x0, y0, width=img_width,
+                            height=img_height, mask='auto', preserveAspectRatio=True)
+                continue
+
+            # --- HANDLE TEXT ---
+            fs = font_size if font_size is not None else DEFAULT_FONT_SIZE
             available_width = x1 - x0 - 4
 
             c.setFont(self._font_name, fs)
 
             # Truncate text so it fits within the field width.
-            display = text
+            display = content
             while (
                 c.stringWidth(display, self._font_name, fs) > available_width
                 and len(display) > 1

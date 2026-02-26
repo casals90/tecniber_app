@@ -47,36 +47,37 @@ def render_service_registration_form(form_key):
         col1, col2, col3 = st.columns(3)
         with col1:
             service_num = st.text_input(
-                "Nº Servei *", value=None, placeholder="S-0001")
+                "Nº Servei *", value="None", placeholder="S-0001")
         with col2:
-            start_time = st.time_input("H. Inici *", value=None)
+            start_time = st.time_input("H. Inici *", value="12:00")
         with col3:
-            end_time = st.time_input("H. Final *", value=None)
+            end_time = st.time_input("H. Final *", value="12:15")
 
         # ROW 3
         col4, col5 = st.columns([1, 2])
         with col4:
             technician = st.text_input(
-                "Tècnic *", placeholder="Nom del tècnic")
+                "Tècnic *", placeholder="Nom del tècnic", value="None")
         with col5:
             address = st.text_input(
-                "Adreça *", placeholder="Carrer, número, ciutat")
+                "Adreça *", placeholder="Carrer, número, ciutat", value="None")
 
         # ROW 4
         col6, col7 = st.columns(2)
         with col6:
-            client = st.text_input("Client *", placeholder="Nom del client")
+            client = st.text_input(
+                "Client *", placeholder="Nom del client", value="None")
         with col7:
-            dni = st.text_input("DNI *", placeholder="12345678A")
+            dni = st.text_input("DNI *", placeholder="12345678A", value="None")
 
         # ROW 5 - NEW FIELDS
         col8, col9 = st.columns(2)
         with col8:
             images_folder = st.text_input(
-                "Carpeta imatges *", placeholder="C:/ruta/a/les/imatges")
+                "Carpeta imatges *", placeholder="C:/ruta/a/les/imatges", value="/Users/casals/Desktop/imatges")
         with col9:
             output_folder = st.text_input(
-                "Guardar zip *", placeholder="C:/ruta/de/sortida")
+                "Guardar zip *", placeholder="C:/ruta/de/sortida", value="/Users/casals/Desktop/")
 
         st.write("")
         st.write("")  # Add a little extra breathing room

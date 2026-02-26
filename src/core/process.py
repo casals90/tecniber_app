@@ -95,6 +95,7 @@ def execute(input_data: dict[str, Any], output_folder: pathlib.Path | str) \
             time1=input_data["start_time"],
             time2=input_data["end_time"],
             dni=input_data["dni"],
+            signature=input_data["signature"]
         )
         filler.fill()
 
