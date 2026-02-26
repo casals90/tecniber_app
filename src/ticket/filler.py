@@ -119,7 +119,8 @@ class TicketFiller:
         page = reader.pages[0]
 
         overlay_bytes = self._build_overlay(
-            self.date1, self.time1, self.date2, self.time2, self.dni, self.signature)
+            self.date1, self.time1, self.date2, self.time2,
+            self.dni, self.signature)
 
         overlay_page = PdfReader(io.BytesIO(overlay_bytes)).pages[0]
         page.merge_page(overlay_page)
@@ -226,7 +227,10 @@ class TicketFiller:
             search_dirs = [r"C:\Windows\Fonts"]
         else:
             search_dirs = [
-                "/usr/share/fonts", "/usr/local/share/fonts", os.path.expanduser("~/.fonts")]
+                "/usr/share/fonts",
+                "/usr/local/share/fonts",
+                os.path.expanduser("~/.fonts")
+            ]
 
         for name in candidates:
             for directory in search_dirs:
