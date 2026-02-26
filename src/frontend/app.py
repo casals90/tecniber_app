@@ -1,10 +1,9 @@
 import base64
 import pathlib
+import re
 
 import streamlit as st
 from PIL import Image
-
-# 1. NEW IMPORT: Import the canvas component
 from streamlit_drawable_canvas import st_canvas
 
 from src.core import process
@@ -47,28 +46,29 @@ def render_service_registration_form(form_key):
         col1, col2, col3 = st.columns(3)
         with col1:
             service_num = st.text_input(
-                "Nº Servei *", value="None", placeholder="S-0001")
+                "Nº Servei *", value="S-0001", placeholder="S-0001")
         with col2:
-            start_time = st.time_input("H. Inici *", value="12:00")
+            start_time = st.time_input("H. Inici *", value="09:00")
         with col3:
-            end_time = st.time_input("H. Final *", value="12:15")
+            end_time = st.time_input("H. Final *", value="18:00")
 
         # ROW 3
         col4, col5 = st.columns([1, 2])
         with col4:
             technician = st.text_input(
-                "Tècnic *", placeholder="Nom del tècnic", value="None")
+                "Tècnic *", placeholder="Nom del tècnic", value="Jordi Figols")
         with col5:
             address = st.text_input(
-                "Adreça *", placeholder="Carrer, número, ciutat", value="None")
+                "Adreça *", placeholder="Carrer, número, ciutat", value="Calle Falsa 123")
 
         # ROW 4
         col6, col7 = st.columns(2)
         with col6:
             client = st.text_input(
-                "Client *", placeholder="Nom del client", value="None")
+                "Client *", placeholder="Nom del client", value="Marc Bartoló")
         with col7:
-            dni = st.text_input("DNI *", placeholder="12345678A", value="None")
+            dni = st.text_input(
+                "DNI *", placeholder="12345678A", value="12345678A", max_chars=9)
 
         # ROW 5 - NEW FIELDS
         col8, col9 = st.columns(2)
@@ -82,14 +82,14 @@ def render_service_registration_form(form_key):
         st.write("")
         st.write("")  # Add a little extra breathing room
 
-        # --- 2. NEW SIGNATURE PAD (CENTERED) ---
         # Center the text label
         st.markdown(
             "<p style='text-align: center; font-weight: bold;'>✍️ Signatura del Client *</p>", unsafe_allow_html=True)
 
         # Use columns to push the canvas to the center
-        # The ratio [1, 2, 1] means the center column is twice as wide as the sides
-        pad_col1, pad_col2, pad_col3 = st.columns([1, 2, 1])
+        # The ratio [1, 2, 1] means the center column is twice as wide
+        # as the sides
+        _, pad_col2, _ = st.columns([1, 2, 1])
 
         with pad_col2:
             canvas_result = st_canvas(
@@ -97,7 +97,8 @@ def render_service_registration_form(form_key):
                 stroke_color="#000000",
                 background_color="#EEEEEE",
                 height=150,
-                width=400,  # Fixed width to keep it looking like a standard signature box
+                # Fixed width to keep it looking like a standard signature box
+                width=400,
                 drawing_mode="freedraw",
                 key=f"canvas_{form_key}",
             )
@@ -113,7 +114,7 @@ def render_service_registration_form(form_key):
 
     # --- RETURN DATA FOR MAIN TO HANDLE ---
     if submitted:
-        # Check if the user actually drew something (strokes exist)
+        # Check if the user actually drew something
         has_signature = False
         if canvas_result.json_data is not None:
             # If the 'objects' list has items, the user drew on the canvas
@@ -141,7 +142,7 @@ def render_service_registration_form(form_key):
                 "dni": dni,
                 "images_folder": images_folder,
                 "output_folder": output_folder,
-                "signature": signature_image  # Will be None if empty
+                "signature": signature_image
             }
         }
     elif netejar:
@@ -230,6 +231,7 @@ def main():
             if form_result["action"] == "submit":
                 form_data = form_result["data"]
                 empty_fields = []
+                validation_errors = []
 
                 # Map internal keys to display names for errors
                 field_names = {
@@ -254,9 +256,19 @@ def main():
                 if form_data["signature"] is None:
                     empty_fields.append("Signatura")
 
+                dni_value = form_data["dni"]
+                if dni_value:
+                    # Check if it matches exactly 8 digits followed by 1 letter
+                    if not re.match(r"^\d{8}[A-Za-z]$", dni_value):
+                        validation_errors.append(
+                            "El DNI ha de tenir 8 números i 1 lletra.")
+
                 if empty_fields:
                     st.error(
                         f"❌ Error: Tots els camps són obligatoris. Falten: **{', '.join(empty_fields)}**")
+                elif validation_errors:
+                    for error in validation_errors:
+                        st.warning(f"⚠️ {error}")
                 else:
                     st.success(
                         f"✅ Servei **{form_data['service_num']}** generat correctament per al client **{form_data['client']}**!")
