@@ -1,6 +1,5 @@
 import base64
 import pathlib
-import re
 
 import streamlit as st
 from PIL import Image
@@ -231,7 +230,6 @@ def main():
             if form_result["action"] == "submit":
                 form_data = form_result["data"]
                 empty_fields = []
-                validation_errors = []
 
                 # Map internal keys to display names for errors
                 field_names = {
@@ -256,19 +254,9 @@ def main():
                 if form_data["signature"] is None:
                     empty_fields.append("Signatura")
 
-                dni_value = form_data["dni"]
-                if dni_value:
-                    # Check if it matches exactly 8 digits followed by 1 letter
-                    if not re.match(r"^\d{8}[A-Za-z]$", dni_value):
-                        validation_errors.append(
-                            "El DNI ha de tenir 8 números i 1 lletra.")
-
                 if empty_fields:
                     st.error(
                         f"❌ Error: Tots els camps són obligatoris. Falten: **{', '.join(empty_fields)}**")
-                elif validation_errors:
-                    for error in validation_errors:
-                        st.warning(f"⚠️ {error}")
                 else:
                     st.success(
                         f"✅ Servei **{form_data['service_num']}** generat correctament per al client **{form_data['client']}**!")
