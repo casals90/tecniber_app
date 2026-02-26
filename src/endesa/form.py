@@ -51,26 +51,14 @@ TEXT_FIELDS: dict[str, TextField] = {
 
 
 class EndesaFormFiller:
-    """Fills an Endesa maintenance PDF form with the supplied field values.
+    """
+    Fills an Endesa maintenance PDF form with the supplied field values 
+    and signature.
 
-    The class resolves a handwriting-style font, builds a transparent text
-    overlay with ReportLab, merges it onto the original PDF page with pypdf,
-    and writes the result to *output_path*.
-
-    Args:
-        input_path: Path to the blank Endesa PDF template.
-        output_path: Destination path for the filled PDF.
-        fields: Mapping of field keys to value/style descriptors.
-                Each entry must be a ``dict`` with:
-
-                * ``"value"`` *(required)* – the text to write.
-                * ``"styles"`` *(optional)* – a dict that may contain
-                  ``"font_size"`` (number); omit to use
-                  :data:`DEFAULT_FONT_SIZE`.
-
-                **Valid keys:** ``num_service``, ``start_time``,
-                ``end_time``, ``technician``, ``company``, ``client``,
-                ``address``, ``data``, ``dni``.
+    This class resolves a handwriting-style font, processes image-based 
+    signatures (removing backgrounds and cropping), builds a transparent text 
+    and image overlay using ReportLab, merges it onto the original PDF page 
+    with pypdf, and writes the result to a specified output path.
     """
 
     #: Ink colour used for all text (dark blue).
@@ -82,6 +70,15 @@ class EndesaFormFiller:
         output_path: str,
         fields: dict[str, Any],
     ) -> None:
+        """
+        Initializes the form filler with input/output paths and raw field data.
+
+        Args:
+            input_path (str): Path to the blank Endesa PDF template.
+            output_path (str): Destination path for the filled PDF.
+            fields (dict[str, Any]): Mapping of field keys to their values. 
+                Values can be text strings or a PIL Image (for the signature).
+        """
         self._input_path = input_path
         self._output_path = output_path
 
@@ -90,21 +87,22 @@ class EndesaFormFiller:
 
         self._font_name = self._register_font()
 
-    # ------------------------------------------------------------------
-    # Public interface
-    # ------------------------------------------------------------------
-
     def generate(self) -> None:
-        """Fill the form and write the output PDF to *output_path*.
+        """
+        Processes the template, applies the overlay, and saves the final PDF.
+
+        Reads the input PDF template, determines its dimensions, generates a 
+        transparent overlay containing the text and signature image, merges the 
+        overlay onto the first page, and writes the complete document to the 
+        output path.
 
         Raises:
-            FileNotFoundError: If *input_path* does not exist.
+            FileNotFoundError: If the input PDF template does not exist.
         """
         reader = PdfReader(self._input_path)
         page = reader.pages[0]
         page_width = float(page.mediabox.width)
         page_height = float(page.mediabox.height)
-        logging.info(f"Page size: {page_width:.1f} x {page_height:.1f} pt")
 
         overlay_bytes = self._build_overlay(page_width, page_height)
         overlay_page = PdfReader(io.BytesIO(overlay_bytes)).pages[0]
@@ -120,12 +118,19 @@ class EndesaFormFiller:
 
         logging.info(f"✅  Filled PDF saved to: {self._output_path}")
 
-    # ------------------------------------------------------------------
-    # Private helpers
-    # ------------------------------------------------------------------
-
     @staticmethod
     def _clean_fields(fields: dict[str, Any]) -> dict[str, Any]:
+        """
+        Maps raw input data to the internal field structure and default styles.
+
+        Args:
+            fields (dict[str, Any]): The raw dictionary of form data submitted 
+                by the user or frontend.
+
+        Returns:
+            dict[str, Any]: A structured dictionary containing 'value' and 
+            optional 'styles' (like 'font_size') for each specific PDF field.
+        """
         cleaned_fields = {
             "num_service": {
                 "value": fields.get("service_num")
@@ -161,6 +166,27 @@ class EndesaFormFiller:
     @staticmethod
     def _parse_fields(
             fields: dict[str, Any]) -> dict[str, tuple[Any, float | None]]:
+        """
+        Validates and normalizes the structured field mapping.
+
+        Checks against known `TEXT_FIELDS`, ensuring no invalid keys are 
+        passed. It preserves PIL Image objects (for signatures) while 
+        converting standard text fields to strings.
+
+        Args:
+            fields (dict[str, Any]): The structured dictionary 
+                from `_clean_fields`.
+
+        Returns:
+            dict[str, tuple[Any, float | None]]: A dictionary mapping valid 
+            keys to a tuple containing the content (str or PIL Image) and the 
+            font size.
+
+        Raises:
+            ValueError: On unknown field keys or malformed dictionary entries.
+            TypeError: When a provided `font_size` cannot be coerced to 
+                a float.
+        """
 
         unknown = set(fields) - set(TEXT_FIELDS)
         if unknown:
@@ -205,7 +231,21 @@ class EndesaFormFiller:
 
     @staticmethod
     def _clean_signature(img: Image.Image) -> Image.Image:
-        """Removes the gray/white background and crops the empty space."""
+        """
+        Processes a signature image by removing its background and cropping it.
+
+        Converts light-colored pixels (typically the Streamlit canvas 
+        background) to transparent pixels, turns the drawn strokes into dark 
+        blue ink, and crops the image tightly around the actual signature 
+        strokes using a bounding box.
+
+        Args:
+            img (Image.Image): The raw PIL Image object from the signature pad.
+
+        Returns:
+            Image.Image: A processed, tightly cropped PIL Image with a 
+            transparent background.
+        """
         img = img.convert("RGBA")
         data = img.getdata()
 
@@ -230,12 +270,13 @@ class EndesaFormFiller:
 
     @staticmethod
     def _register_font() -> str:
-        """Locate a handwriting font, register it with ReportLab, and return
-        the font name to use in ``canvas.setFont`` calls.
+        """
+        Locates a handwriting font, registers it with ReportLab, and 
+        returns its name.
 
         Returns:
-            ``"Handwriting"`` when a TTF is found, otherwise
-            ``"Helvetica-Oblique"`` as a fallback.
+            str: `"Handwriting"` if a valid TTF is found, otherwise 
+            `"Helvetica-Oblique"` as a fallback.
         """
         font_path = utils.find_handwriting_font()
         if font_path:
@@ -248,6 +289,23 @@ class EndesaFormFiller:
         return "Helvetica-Oblique"
 
     def _build_overlay(self, page_width: float, page_height: float) -> bytes:
+        """
+        Renders all text fields and the signature image onto a transparent 
+        canvas.
+
+        Iterates over the parsed fields. If a field contains an image, it 
+        scales and draws the image within the defined bounding box. If it 
+        contains text, it truncates the text to fit the available width and 
+        draws it vertically centered.
+
+        Args:
+            page_width (float): Width of the target PDF page in points.
+            page_height (float): Height of the target PDF page in points.
+
+        Returns:
+            bytes: Raw bytes of a single-page PDF containing only the 
+            text/image overlay.
+        """
         buf = io.BytesIO()
         c = canvas.Canvas(buf, pagesize=(page_width, page_height))
         c.setFillColorRGB(*self.INK_COLOR)
@@ -264,9 +322,11 @@ class EndesaFormFiller:
                 img_width = x1 - x0
                 img_height = y1 - y0
 
-                # Draw the image in the bounding box. 'mask="auto"' ensures transparent backgrounds work.
-                c.drawImage(img_reader, x0, y0, width=img_width,
-                            height=img_height, mask='auto', preserveAspectRatio=True)
+                # Draw the image in the bounding box. 'mask="auto"' ensures
+                # transparent backgrounds work.
+                c.drawImage(
+                    img_reader, x0, y0, width=img_width, height=img_height,
+                    mask='auto', preserveAspectRatio=True)
                 continue
 
             # --- HANDLE TEXT ---

@@ -52,6 +52,15 @@ _TICKET_FONT_CANDIDATES = [
 
 
 class TicketFiller:
+    """
+    Fills date/time fields and adds a DNI and signature annotation to a 
+    ticket PDF.
+
+    This class handles font resolution for both standard and handwritten 
+    styles, processes an image-based signature to remove its background, 
+    creates a transparent PDF overlay to mask old data and write new data, and 
+    merges the overlay onto the original ticket PDF.
+    """
     _TICKET_FONT_NAME = "TicketFont"
     _HANDWRITE_FONT_NAME = "Handwriting"
     _TICKET_FONT_SIZE = 7.0
@@ -67,6 +76,21 @@ class TicketFiller:
         dni: str,
         signature: Image.Image | None = None,
     ) -> None:
+        """
+        Initializes the TicketFiller with file paths, replacement data, and an 
+        optional signature.
+
+        Args:
+            input_path (str): Path to the original testo ticket PDF template.
+            output_path (str): Destination path for the modified PDF.
+            date1 (datetime.date): The new date to apply to both the testo 
+                320 and 315-4 blocks.
+            time1 (datetime.time): The new time for the testo 320 block.
+            time2 (datetime.time): The new time for the testo 315-4 block.
+            dni (str): The DNI string to write in a handwriting style.
+            signature (Image.Image | None, optional): A PIL Image representing 
+                the user's signature. Defaults to None.
+        """
         self.input_path = input_path
         self.output_path = output_path
 
@@ -81,6 +105,14 @@ class TicketFiller:
         self._handwrite_font_name: str = "Helvetica-Oblique"
 
     def fill(self) -> None:
+        """
+        Executes the PDF filling process and writes the output file.
+
+        Resolves required fonts, reads the input PDF, generates a transparent 
+        overlay containing the whiteout boxes, new text, and signature, merges 
+        this overlay onto the first page of the PDF, and saves the final 
+        document.
+        """
         self._resolve_fonts()
 
         reader = PdfReader(self.input_path)
@@ -108,7 +140,22 @@ class TicketFiller:
 
     @staticmethod
     def _clean_signature(img: Image.Image) -> Image.Image:
-        """Removes the gray/white background and crops the empty space."""
+        """
+        Processes a signature image by removing its background and cropping it 
+        tightly.
+
+        Converts light-colored pixels (typically the Streamlit 
+        canvas background) to transparent pixels, turns the drawn strokes into 
+        dark blue ink, and crops the image to the bounding box of the actual 
+        signature strokes.
+
+        Args:
+            img (Image.Image): The raw PIL Image object from the signature pad.
+
+        Returns:
+            Image.Image: A processed, tightly cropped PIL Image with a 
+            transparent background.
+        """
         img = img.convert("RGBA")
         data = img.getdata()
 
@@ -132,6 +179,13 @@ class TicketFiller:
     # ------------------------------------------------------------------
 
     def _resolve_fonts(self) -> None:
+        """
+        Finds and registers both the ticket body font and the handwriting font.
+
+        Searches the system directories for matching fonts. If found, they are 
+        registered with ReportLab. If not, it falls back to standard built-in 
+        PDF fonts (Helvetica and Helvetica-Oblique).
+        """
         ticket_path = self._find_font(_TICKET_FONT_CANDIDATES)
         handwrite_path = self._find_font(_HANDWRITE_CANDIDATES)
 
@@ -152,6 +206,18 @@ class TicketFiller:
 
     @staticmethod
     def _find_font(candidates: list[str]) -> str | None:
+        """
+        Searches OS-specific font directories for the first matching candidate 
+        filename.
+
+        Args:
+            candidates (list[str]): A list of font filenames 
+            (e.g., "Arial.ttf") to search for.
+
+        Returns:
+            str | None: The absolute path to the first found font file, or 
+            None if no match is found.
+        """
         system = platform.system()
         if system == "Darwin":
             search_dirs = ["/Library/Fonts", "/System/Library/Fonts",
@@ -183,6 +249,27 @@ class TicketFiller:
         dni:   str,
         signature: Image.Image | None,
     ) -> bytes:
+        """
+        Builds a transparent ReportLab overlay for the ticket modifications.
+
+        This overlay performs three actions:
+        1. Erases the original dates and times with white rectangles.
+        2. Redraws the new dates and times in the ticket body font.
+        3. Draws the DNI text and user signature image in their designated 
+        zones.
+
+        Args:
+            date1 (str): Formatted date string for the first block.
+            time1 (str): Formatted time string for the first block.
+            date2 (str): Formatted date string for the second block.
+            time2 (str): Formatted time string for the second block.
+            dni (str): The DNI string to write.
+            signature (Image.Image | None): The user's signature image 
+                to overlay.
+
+        Returns:
+            bytes: Raw bytes of a single-page PDF containing the modifications.
+        """
         with io.BytesIO() as buf:
             c = canvas.Canvas(buf, pagesize=(PAGE_WIDTH, PAGE_HEIGHT))
 
@@ -224,6 +311,15 @@ class TicketFiller:
 
     @staticmethod
     def _erase(c: canvas.Canvas, zone: dict) -> None:
+        """
+        Covers a specific rectangular area on the canvas with a solid 
+        white box.
+
+        Args:
+            c (canvas.Canvas): The ReportLab canvas being drawn on.
+            zone (dict): A dictionary defining the bounding box with 
+                keys 'x0', 'x1', 'erase_y0', and 'erase_y1'.
+        """
         c.setFillColor(white)
         c.setStrokeColor(white)
         c.rect(
@@ -233,7 +329,19 @@ class TicketFiller:
             fill=1, stroke=0,
         )
 
-    def _draw_ticket_text(self, c: canvas.Canvas, text: str, zone: dict) -> None:
+    def _draw_ticket_text(
+            self, c: canvas.Canvas, text: str, zone: dict) -> None:
+        """
+        Draws replacement text on the canvas matching the original ticket 
+        style.
+
+        Args:
+            c (canvas.Canvas): The ReportLab canvas being drawn on.
+            text (str): The text string to draw.
+            zone (dict): A dictionary defining the placement area, 
+                using 'x0' for the left-alignment and 'erase_y0' to calculate 
+                the baseline.
+        """
         c.setFillColorRGB(0.0, 0.0, 0.0)
         c.setFont(self._ticket_font_name, self._TICKET_FONT_SIZE)
         baseline = zone["erase_y0"] + 2.0

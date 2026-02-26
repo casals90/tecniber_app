@@ -48,8 +48,8 @@ def get_random_image(folder_path: str | pathlib.Path) -> pathlib.Path | None:
 def execute(input_data: dict[str, Any], output_folder: pathlib.Path | str) \
         -> pathlib.Path:
     """
-    Fills the Endesa form and the testo ticket, then packages both into a 
-    ZIP file.
+    Fills the Endesa form, the ticket and a random image from a given folder 
+    then packages both into a ZIP file.
 
     Args:
         input_data: Dictionary containing the service data.
