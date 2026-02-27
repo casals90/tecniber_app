@@ -84,7 +84,7 @@ uv add install streamlit streamlit-drawable-canvas Pillow pypdf reportlab
 With your virtual environment activated, you can run the application using `uv`:
 
 ```bash
-uv run streamlit run app.py
+uv run streamlit run main.py
 ```
 
 ### How to use the app:
