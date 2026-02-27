@@ -113,7 +113,9 @@ def execute(input_data: dict[str, Any], output_folder: pathlib.Path | str) \
             zip_file.write(ticket_filled_path, arcname=ticket_filled_path.name)
 
             if random_image:
-                zip_file.write(random_image, arcname=random_image.name)
+                image_filename = \
+                    f"Foto-{input_data["service_num"]}{random_image.suffix}"
+                zip_file.write(random_image, arcname=image_filename)
 
     logger.info(f"✅ Documents successfully zipped at: {zip_output_path}")
 
