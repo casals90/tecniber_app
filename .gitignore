@@ -208,4 +208,5 @@ __marimo__/
 
 .DS_Store
 
-/data/
+data/endesa/*.pdf
+data/ticket/*.pdf

@@ -1,6 +1,6 @@
 [project]
 name = "tecniber-app"
-version = "0.1.0"
+version = "1.0.0"
 description = "Tecniber automatitzation"
 readme = "README.md"
 requires-python = ">=3.14"
@@ -12,6 +12,3 @@ dependencies = [
     "streamlit>=1.54.0",
     "streamlit-drawable-canvas>=0.9.3",
 ]
-
-[tool.pytest.ini_options]
-# pythonpath = ["src"]
