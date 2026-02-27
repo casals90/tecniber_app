@@ -35,7 +35,7 @@ def render_service_registration_form(form_key):
         col_label, col_dia = st.columns([1, 3])
         with col_label:
             st.markdown(
-                "<div style='margin-top: 10px; font-weight: bold;'>Nou Servei *</div>", unsafe_allow_html=True)
+                "<div style='margin-top: 10px; font-weight: bold;'>Nou Servei</div>", unsafe_allow_html=True)
         with col_dia:
             service_date = st.date_input("Dia *", label_visibility="collapsed")
 
