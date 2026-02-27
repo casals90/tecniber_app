@@ -3,7 +3,8 @@ import io
 import logging
 import os
 import platform
-from datetime import datetime
+import random
+from datetime import datetime, time, timedelta
 
 from PIL import Image
 from pypdf import PdfReader, PdfWriter
@@ -94,10 +95,11 @@ class TicketFiller:
         self.input_path = input_path
         self.output_path = output_path
 
+        self.time1, self.time2 = self._clean_times(time1, time2)
+
         self.date1 = date1.strftime("%d . %m . %Y")
-        self.time1 = time1.strftime("%H : %M : %S")
         self.date2 = self.date1
-        self.time2 = time2.strftime("%H : %M : %S")
+
         self.dni = dni
         self.signature = signature
 
@@ -138,6 +140,28 @@ class TicketFiller:
     # ------------------------------------------------------------------
     # Image Cleaning
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _clean_times(
+            time1: datetime.time, time2: datetime.time) -> tuple[str, str]:
+        # Convert times to total seconds from midnight to do math
+        t1_sec = time1.hour * 3600 + time1.minute * 60 + time1.second
+        t2_sec = time2.hour * 3600 + time2.minute * 60 + time2.second
+
+        # Find the midpoint and +/- 30 seconds to ensure new_time1
+        # doesn't always end in :00 or :30
+        mid_sec = ((t1_sec + t2_sec) // 2) + random.randint(-30, 30)
+        new_time1_dt = datetime.combine(
+            datetime.today(), time(0)) + timedelta(seconds=mid_sec)
+
+        # Add random offset (3 to 5 minutes, including random seconds)
+        # 3 minutes = 180s, 5 minutes = 300s
+        random_offset = random.randint(180, 300)
+        new_time2_dt = new_time1_dt + timedelta(seconds=random_offset)
+
+        # Format to "HH : MM : SS"
+        fmt = "%H : %M : %S"
+        return new_time1_dt.strftime(fmt), new_time2_dt.strftime(fmt)
 
     @staticmethod
     def _clean_signature(img: Image.Image) -> Image.Image:
