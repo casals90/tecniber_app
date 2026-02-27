@@ -3,8 +3,6 @@ import pathlib
 
 import streamlit as st
 from PIL import Image
-
-# 1. NEW IMPORT: Import the canvas component
 from streamlit_drawable_canvas import st_canvas
 
 from src.core import process
@@ -37,7 +35,7 @@ def render_service_registration_form(form_key):
         col_label, col_dia = st.columns([1, 3])
         with col_label:
             st.markdown(
-                "<div style='margin-top: 10px; font-weight: bold;'>Nou Servei *</div>", unsafe_allow_html=True)
+                "<div style='margin-top: 10px; font-weight: bold;'>Nou Servei</div>", unsafe_allow_html=True)
         with col_dia:
             service_date = st.date_input("Dia *", label_visibility="collapsed")
 
@@ -47,49 +45,52 @@ def render_service_registration_form(form_key):
         col1, col2, col3 = st.columns(3)
         with col1:
             service_num = st.text_input(
-                "Nº Servei *", value="None", placeholder="S-0001")
+                "Nº Servei *", placeholder="S-0001")
         with col2:
-            start_time = st.time_input("H. Inici *", value="12:00")
+            start_time = st.time_input("H. Inici *", value="09:00")
         with col3:
-            end_time = st.time_input("H. Final *", value="12:15")
+            end_time = st.time_input("H. Final *", value="18:00")
 
         # ROW 3
         col4, col5 = st.columns([1, 2])
         with col4:
             technician = st.text_input(
-                "Tècnic *", placeholder="Nom del tècnic", value="None")
+                "Tècnic *", placeholder="Nom del tècnic")
         with col5:
             address = st.text_input(
-                "Adreça *", placeholder="Carrer, número, ciutat", value="None")
+                "Adreça *", placeholder="Carrer, número, ciutat")
 
         # ROW 4
         col6, col7 = st.columns(2)
         with col6:
             client = st.text_input(
-                "Client *", placeholder="Nom del client", value="None")
+                "Client *", placeholder="Nom del client")
         with col7:
-            dni = st.text_input("DNI *", placeholder="12345678A", value="None")
+            dni = st.text_input(
+                "DNI *", placeholder="12345678A", max_chars=9)
 
-        # ROW 5 - NEW FIELDS
+        # ROW 5
         col8, col9 = st.columns(2)
         with col8:
             images_folder = st.text_input(
-                "Carpeta imatges *", placeholder="C:/ruta/a/les/imatges", value="/Users/casals/Desktop/imatges")
+                "Carpeta imatges *", placeholder="C:/ruta/a/les/imatges",
+                value=st.session_state.get("saved_images_folder", ""))
         with col9:
             output_folder = st.text_input(
-                "Guardar zip *", placeholder="C:/ruta/de/sortida", value="/Users/casals/Desktop/")
+                "Guardar zip *", placeholder="C:/ruta/de/sortida",
+                value=st.session_state.get("saved_output_folder", ""))
 
         st.write("")
         st.write("")  # Add a little extra breathing room
 
-        # --- 2. NEW SIGNATURE PAD (CENTERED) ---
         # Center the text label
         st.markdown(
             "<p style='text-align: center; font-weight: bold;'>✍️ Signatura del Client *</p>", unsafe_allow_html=True)
 
         # Use columns to push the canvas to the center
-        # The ratio [1, 2, 1] means the center column is twice as wide as the sides
-        pad_col1, pad_col2, pad_col3 = st.columns([1, 2, 1])
+        # The ratio [1, 2, 1] means the center column is twice as wide
+        # as the sides
+        _, pad_col2, _ = st.columns([1, 2, 1])
 
         with pad_col2:
             canvas_result = st_canvas(
@@ -97,7 +98,8 @@ def render_service_registration_form(form_key):
                 stroke_color="#000000",
                 background_color="#EEEEEE",
                 height=150,
-                width=400,  # Fixed width to keep it looking like a standard signature box
+                # Fixed width to keep it looking like a standard signature box
+                width=400,
                 drawing_mode="freedraw",
                 key=f"canvas_{form_key}",
             )
@@ -113,7 +115,7 @@ def render_service_registration_form(form_key):
 
     # --- RETURN DATA FOR MAIN TO HANDLE ---
     if submitted:
-        # Check if the user actually drew something (strokes exist)
+        # Check if the user actually drew something
         has_signature = False
         if canvas_result.json_data is not None:
             # If the 'objects' list has items, the user drew on the canvas
@@ -141,7 +143,7 @@ def render_service_registration_form(form_key):
                 "dni": dni,
                 "images_folder": images_folder,
                 "output_folder": output_folder,
-                "signature": signature_image  # Will be None if empty
+                "signature": signature_image
             }
         }
     elif netejar:
@@ -158,6 +160,10 @@ def main():
     # Initialize form key for the clear functionality
     if "form_key" not in st.session_state:
         st.session_state.form_key = 0
+    if "saved_images_folder" not in st.session_state:
+        st.session_state.saved_images_folder = ""
+    if "saved_output_folder" not in st.session_state:
+        st.session_state.saved_output_folder = ""
 
     # --- LOAD LOGO ---
     # Ensure this path matches exactly where your logo is located
@@ -261,10 +267,17 @@ def main():
                     st.success(
                         f"✅ Servei **{form_data['service_num']}** generat correctament per al client **{form_data['client']}**!")
 
+                    # Save folder paths and reset the form
+                    st.session_state.saved_images_folder = form_data["images_folder"]
+                    st.session_state.saved_output_folder = form_data["output_folder"]
+                    st.session_state.form_key += 1
+
                     output_folder = form_data["output_folder"]
 
                     # Passed validation, safe to execute!
                     process.execute(form_data, output_folder)
+
+                    st.rerun()
 
             elif form_result["action"] == "clear":
                 # Increment the key to destroy the old form state, then rerun
