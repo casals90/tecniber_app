@@ -149,7 +149,7 @@ class EndesaFormFiller:
             "address": {
                 "value": fields.get("address")},
             "date": {
-                "value": fields.get("service_date"),
+                "value": fields.get("service_date").strftime("%d/%m/%Y"),
                 "styles": {"font_size": 12}
             },
             "dni": {

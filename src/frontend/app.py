@@ -45,7 +45,7 @@ def render_service_registration_form(form_key):
         col1, col2, col3 = st.columns(3)
         with col1:
             service_num = st.text_input(
-                "Nº Servei *", value="S-0001", placeholder="S-0001")
+                "Nº Servei *", placeholder="S-0001")
         with col2:
             start_time = st.time_input("H. Inici *", value="09:00")
         with col3:
@@ -55,28 +55,30 @@ def render_service_registration_form(form_key):
         col4, col5 = st.columns([1, 2])
         with col4:
             technician = st.text_input(
-                "Tècnic *", placeholder="Nom del tècnic", value="Jordi Figols")
+                "Tècnic *", placeholder="Nom del tècnic")
         with col5:
             address = st.text_input(
-                "Adreça *", placeholder="Carrer, número, ciutat", value="Calle Falsa 123")
+                "Adreça *", placeholder="Carrer, número, ciutat")
 
         # ROW 4
         col6, col7 = st.columns(2)
         with col6:
             client = st.text_input(
-                "Client *", placeholder="Nom del client", value="Marc Bartoló")
+                "Client *", placeholder="Nom del client")
         with col7:
             dni = st.text_input(
-                "DNI *", placeholder="12345678A", value="12345678A", max_chars=9)
+                "DNI *", placeholder="12345678A", max_chars=9)
 
-        # ROW 5 - NEW FIELDS
+        # ROW 5
         col8, col9 = st.columns(2)
         with col8:
             images_folder = st.text_input(
-                "Carpeta imatges *", placeholder="C:/ruta/a/les/imatges", value="/Users/casals/Desktop/imatges")
+                "Carpeta imatges *", placeholder="C:/ruta/a/les/imatges",
+                value=st.session_state.get("saved_images_folder", ""))
         with col9:
             output_folder = st.text_input(
-                "Guardar zip *", placeholder="C:/ruta/de/sortida", value="/Users/casals/Desktop/")
+                "Guardar zip *", placeholder="C:/ruta/de/sortida",
+                value=st.session_state.get("saved_output_folder", ""))
 
         st.write("")
         st.write("")  # Add a little extra breathing room
@@ -158,6 +160,10 @@ def main():
     # Initialize form key for the clear functionality
     if "form_key" not in st.session_state:
         st.session_state.form_key = 0
+    if "saved_images_folder" not in st.session_state:
+        st.session_state.saved_images_folder = ""
+    if "saved_output_folder" not in st.session_state:
+        st.session_state.saved_output_folder = ""
 
     # --- LOAD LOGO ---
     # Ensure this path matches exactly where your logo is located
@@ -261,10 +267,17 @@ def main():
                     st.success(
                         f"✅ Servei **{form_data['service_num']}** generat correctament per al client **{form_data['client']}**!")
 
+                    # Save folder paths and reset the form
+                    st.session_state.saved_images_folder = form_data["images_folder"]
+                    st.session_state.saved_output_folder = form_data["output_folder"]
+                    st.session_state.form_key += 1
+
                     output_folder = form_data["output_folder"]
 
                     # Passed validation, safe to execute!
                     process.execute(form_data, output_folder)
+
+                    st.rerun()
 
             elif form_result["action"] == "clear":
                 # Increment the key to destroy the old form state, then rerun
