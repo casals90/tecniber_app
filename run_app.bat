@@ -1,70 +1,120 @@
-#!/usr/bin/env bash
+@echo off
+setlocal enabledelayedexpansion
 
-echo "====================================="
-echo "   FIRST RUN MAY TAKE A FEW MINUTES"
-echo "====================================="
-echo
+echo =====================================
+echo    FIRST RUN MAY TAKE A FEW MINUTES
+echo =====================================
+echo.
 
-# Go to project folder
-cd "$(dirname "$0")"
+:: Go to the folder where this .bat file lives
+cd /d "%~dp0"
 
-# -----------------------------
-# Check Python
-# -----------------------------
-if ! command -v python3 &> /dev/null
-then
-    echo "Python is not installed."
-    echo
-    echo "Please install Python from:"
-    echo "https://www.python.org/downloads/"
-    echo
-    read -p "Press ENTER after installing Python..."
-    exit 1
-fi
+:: -----------------------------
+:: Check Python
+:: -----------------------------
+python --version >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] Python is not installed on this computer.
+    echo.
+    echo Please follow these steps:
+    echo   1. Open your browser and go to: https://www.python.org/downloads/
+    echo   2. Click the big yellow "Download Python" button
+    echo   3. Run the installer
+    echo   4. IMPORTANT: Check the box that says "Add Python to PATH"
+    echo   5. Once installed, double-click this file again
+    echo.
+    pause
+    exit /b 1
+)
 
-# -----------------------------
-# Check pip
-# -----------------------------
-if ! command -v pip3 &> /dev/null
-then
-    echo "pip is missing. Installing pip..."
-    python3 -m ensurepip --upgrade
-fi
+echo [OK] Python is installed.
 
-# -----------------------------
-# Install uv if missing
-# -----------------------------
-if ! command -v uv &> /dev/null
-then
-    echo "Installing uv..."
-    pip3 install --user uv
-    export PATH="$HOME/.local/bin:$PATH"
-fi
+:: -----------------------------
+:: Check pip
+:: -----------------------------
+pip --version >nul 2>&1
+if errorlevel 1 (
+    echo [INFO] pip is missing. Installing pip...
+    python -m ensurepip --upgrade
+)
 
-# -----------------------------
-# Create virtual environment
-# -----------------------------
-if [ ! -d ".venv" ]; then
-    echo "Creating virtual environment..."
-    uv venv
-fi
+echo [OK] pip is available.
 
-# -----------------------------
-# Activate environment
-# -----------------------------
-source .venv/bin/activate
+:: -----------------------------
+:: Install uv if missing
+:: -----------------------------
+uv --version >nul 2>&1
+if errorlevel 1 (
+    echo [INFO] Installing uv package manager...
+    pip install uv
 
-# -----------------------------
-# Install dependencies
-# -----------------------------
-echo "Installing project dependencies..."
-uv sync
+    :: Refresh PATH with all common Python Scripts locations
+    for /f "delims=" %%i in ('python -c "import sysconfig; print(sysconfig.get_path(\"scripts\"))"') do (
+        set "PATH=%%i;%PATH%"
+    )
+    set "PATH=%APPDATA%\Python\Scripts;%PATH%"
+    set "PATH=%LOCALAPPDATA%\Programs\Python\Python312\Scripts;%PATH%"
+    set "PATH=%LOCALAPPDATA%\Programs\Python\Python311\Scripts;%PATH%"
+    set "PATH=%LOCALAPPDATA%\Programs\Python\Python310\Scripts;%PATH%"
+)
 
-# -----------------------------
-# Run Streamlit
-# -----------------------------
-echo
-echo "Starting application..."
-echo
+:: Use "python -m uv" as the reliable cross-machine way to call uv
+set UV=python -m uv
+echo [OK] uv is available.
 
-uv run streamlit run main.py
+:: -----------------------------
+:: Create virtual environment
+:: (delete it first if it exists but is broken/incomplete)
+:: -----------------------------
+if exist ".venv" (
+    if not exist ".venv\Scripts\python.exe" (
+        echo [INFO] Existing .venv is incomplete, recreating it...
+        rmdir /s /q ".venv"
+    )
+)
+
+if not exist ".venv" (
+    echo [INFO] Creating virtual environment for the first time...
+    %UV% venv
+    if errorlevel 1 (
+        echo [ERROR] Failed to create virtual environment.
+        pause
+        exit /b 1
+    )
+)
+
+echo [OK] Virtual environment ready.
+
+:: NOTE: No need to activate manually - uv sync and uv run handle the venv automatically
+
+:: -----------------------------
+:: Install dependencies
+:: -----------------------------
+echo [INFO] Installing project dependencies ^(this may take a minute^)...
+%UV% sync
+if errorlevel 1 (
+    echo [ERROR] Failed to install dependencies.
+    echo Make sure you have an internet connection and try again.
+    pause
+    exit /b 1
+)
+
+echo [OK] All dependencies installed.
+
+:: -----------------------------
+:: Run Streamlit
+:: -----------------------------
+echo.
+echo =====================================
+echo    Starting the application...
+echo    A browser window will open soon.
+echo    To stop the app, close this window.
+echo =====================================
+echo.
+
+%UV% run streamlit run main.py
+
+:: If we get here, the app was closed
+echo.
+echo Application has stopped.
+pause
