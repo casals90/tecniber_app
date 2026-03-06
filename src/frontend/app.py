@@ -1,10 +1,12 @@
 import base64
+import json  # <-- NEW: Added json import
 import pathlib
 
 import streamlit as st
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 
+from src import settings
 from src.core import process
 
 
@@ -49,7 +51,7 @@ def render_service_registration_form(form_key):
         with col2:
             start_time = st.time_input("H. Inici *", value="09:00")
         with col3:
-            end_time = st.time_input("H. Final *", value="18:00")
+            end_time = st.time_input("H. Final", value=None)
 
         # ROW 3
         col4, col5 = st.columns([1, 2])
@@ -160,10 +162,24 @@ def main():
     # Initialize form key for the clear functionality
     if "form_key" not in st.session_state:
         st.session_state.form_key = 0
-    if "saved_images_folder" not in st.session_state:
+
+    # --- NEW: Check config.json for folder paths on first load ---
+    if "saved_images_folder" not in st.session_state or "saved_output_folder" not in st.session_state:
         st.session_state.saved_images_folder = ""
-    if "saved_output_folder" not in st.session_state:
         st.session_state.saved_output_folder = ""
+
+        config_path = pathlib.Path(settings.CONFIG_FILE)
+        if config_path.exists():
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    config_data = json.load(f)
+                    st.session_state.saved_images_folder = config_data.get(
+                        "images_folder", "")
+                    st.session_state.saved_output_folder = config_data.get(
+                        "output_folder", "")
+            except Exception:
+                pass  # If file is malformed, just fall back to empty strings
+    # -------------------------------------------------------------
 
     # --- LOAD LOGO ---
     # Ensure this path matches exactly where your logo is located
@@ -242,7 +258,7 @@ def main():
                     "service_date": "Dia",
                     "service_num": "Nº Servei",
                     "start_time": "H. Inici",
-                    "end_time": "H. Final",
+                    # "end_time": "H. Final",
                     "technician": "Tècnic",
                     "address": "Adreça",
                     "client": "Client",
@@ -253,7 +269,7 @@ def main():
 
                 # Check for empty text/date values
                 for key, value in form_data.items():
-                    if key != "signature" and (value is None or str(value).strip() == ""):
+                    if key not in ("signature", "end_time") and (value is None or str(value).strip() == ""):
                         empty_fields.append(field_names.get(key, key))
 
                 # Specifically check if the signature is missing
@@ -262,12 +278,20 @@ def main():
 
                 if empty_fields:
                     st.error(
-                        f"❌ Error: Tots els camps són obligatoris. Falten: **{', '.join(empty_fields)}**")
+                        f"❌ Error: Hi ha camps obligatoris buits. Falten: **{', '.join(empty_fields)}**")
                 else:
                     st.success(
                         f"✅ Servei **{form_data['service_num']}** generat correctament per al client **{form_data['client']}**!")
 
-                    # Save folder paths and reset the form
+                    # --- NEW: Write to config.json upon success ---
+                    with open(settings.CONFIG_FILE, "w", encoding="utf-8") as f:
+                        json.dump({
+                            "images_folder": form_data["images_folder"],
+                            "output_folder": form_data["output_folder"]
+                        }, f, indent=4)
+                    # ----------------------------------------------
+
+                    # Save folder paths to session state and reset the form
                     st.session_state.saved_images_folder = form_data["images_folder"]
                     st.session_state.saved_output_folder = form_data["output_folder"]
                     st.session_state.form_key += 1

@@ -1,6 +1,7 @@
 # Endesa form
 
 DEFAULT_FONT_SIZE = 10
+DEFAULT_COMPANY = "PBN290"
 
 FONT_CANDIDATES = [
     # macOS
@@ -26,3 +27,5 @@ VALID_IMAGE_EXTENSIONS = [
     ".webp",
     ".bmp"
 ]
+
+CONFIG_FILE = "config.json"
