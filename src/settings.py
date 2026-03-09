@@ -1,6 +1,7 @@
 # Endesa form
 
 DEFAULT_FONT_SIZE = 10
+DEFAULT_COMPANY = "PBN290"
 
 FONT_CANDIDATES = [
     # macOS
@@ -15,7 +16,12 @@ FONT_CANDIDATES = [
     "DejaVuSerif-Italic.ttf",
     "FreeSerifItalic.ttf",
     "FreeSansOblique.ttf",
-    # TODO: Add Windows
+    # Windows
+    "segoepr.ttf",
+    "segoesc.ttf",
+    "Inkfree.ttf",
+    "comic.ttf",
+    "KUNSTLER.TTF",
 ]
 
 VALID_IMAGE_EXTENSIONS = [
@@ -26,3 +32,5 @@ VALID_IMAGE_EXTENSIONS = [
     ".webp",
     ".bmp"
 ]
+
+CONFIG_FILE = "config.json"

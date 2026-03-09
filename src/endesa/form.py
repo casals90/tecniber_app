@@ -13,6 +13,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
+from src import settings
 from src.endesa import utils
 from src.settings import DEFAULT_FONT_SIZE
 
@@ -143,7 +144,7 @@ class EndesaFormFiller:
             "technician": {
                 "value": fields.get("technician")},
             "company": {
-                "value": fields.get("company", "FAKE")},
+                "value": fields.get("company", settings.DEFAULT_COMPANY)},
             "client": {
                 "value": fields.get("client")},
             "address": {
