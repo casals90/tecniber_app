@@ -308,7 +308,6 @@ class EndesaFormFiller:
         """
         buf = io.BytesIO()
         c = canvas.Canvas(buf, pagesize=(page_width, page_height))
-        c.setFillColorRGB(*self.INK_COLOR)
 
         for field_key, (content, font_size) in self._parsed_fields.items():
             if not content:
@@ -316,34 +315,32 @@ class EndesaFormFiller:
 
             x0, y0, x1, y1 = TEXT_FIELDS[field_key].rect
 
-            # --- HANDLE SIGNATURE IMAGE ---
+            c.saveState()  # ← isolate every field's color state
+
             if isinstance(content, Image.Image):
                 img_reader = ImageReader(content)
-                img_width = x1 - x0
-                img_height = y1 - y0
-
-                # Draw the image in the bounding box. 'mask="auto"' ensures
-                # transparent backgrounds work.
                 c.drawImage(
-                    img_reader, x0, y0, width=img_width, height=img_height,
+                    img_reader, x0, y0,
+                    width=x1 - x0, height=y1 - y0,
                     mask='auto', preserveAspectRatio=True)
-                continue
+            else:
+                fs = font_size if font_size is not None else DEFAULT_FONT_SIZE
+                available_width = x1 - x0 - 4
+                c.setFont(self._font_name, fs)
+                # ← set per field, not globally
+                c.setFillColorRGB(*self.INK_COLOR)
 
-            # --- HANDLE TEXT ---
-            fs = font_size if font_size is not None else DEFAULT_FONT_SIZE
-            available_width = x1 - x0 - 4
+                display = content
+                while (
+                    c.stringWidth(display, self._font_name,
+                                  fs) > available_width
+                    and len(display) > 1
+                ):
+                    display = display[:-1]
 
-            c.setFont(self._font_name, fs)
+                c.drawString(x0 + 2, utils.text_y_center(y0, y1, fs), display)
 
-            # Truncate text so it fits within the field width.
-            display = content
-            while (
-                c.stringWidth(display, self._font_name, fs) > available_width
-                and len(display) > 1
-            ):
-                display = display[:-1]
-
-            c.drawString(x0 + 2, utils.text_y_center(y0, y1, fs), display)
+            c.restoreState()
 
         c.save()
         return buf.getvalue()
