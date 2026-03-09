@@ -16,7 +16,12 @@ FONT_CANDIDATES = [
     "DejaVuSerif-Italic.ttf",
     "FreeSerifItalic.ttf",
     "FreeSansOblique.ttf",
-    # TODO: Add Windows
+    # Windows
+    "segoepr.ttf",
+    "segoesc.ttf",
+    "Inkfree.ttf",
+    "comic.ttf",
+    "KUNSTLER.TTF",
 ]
 
 VALID_IMAGE_EXTENSIONS = [

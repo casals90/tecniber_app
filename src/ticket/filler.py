@@ -43,12 +43,18 @@ _HANDWRITE_CANDIDATES = [
     "Bradley Hand Bold.ttf", "Noteworthy Bold.ttf", "Chalkboard.ttc",
     "Marker Felt Thin.ttf", "Apple Chancery.ttf", "Caladea-Italic.ttf",
     "Carlito-Italic.ttf", "DejaVuSerif-Italic.ttf", "FreeSerifItalic.ttf",
-    "FreeSansOblique.ttf",
+    "FreeSansOblique.ttf", "segoepr.ttf", "segoesc.ttf", "Inkfree.ttf",
+    "comic.ttf",
 ]
 
 _TICKET_FONT_CANDIDATES = [
-    "LiberationSans-Regular.ttf", "FreeSans.ttf", "DejaVuSans.ttf",
-    "NotoSans-Regular.ttf", "Arial.ttf",
+    # Windows — Microsoft Sans Serif (target ticket font)
+    "micross.ttf",
+    "LiberationSans-Regular.ttf",
+    "FreeSans.ttf",
+    "DejaVuSans.ttf",
+    "NotoSans-Regular.ttf",
+    "Arial.ttf",
 ]
 
 
@@ -243,6 +249,15 @@ class TicketFiller:
         if ticket_path:
             pdfmetrics.registerFont(
                 TTFont(self._TICKET_FONT_NAME, ticket_path))
+            # Register bold variant using the same file
+            # (ReportLab synthesizes bold)
+            pdfmetrics.registerFont(
+                TTFont(f"{self._TICKET_FONT_NAME}-Bold", ticket_path))
+            pdfmetrics.registerFontFamily(
+                self._TICKET_FONT_NAME,
+                normal=self._TICKET_FONT_NAME,
+                bold=f"{self._TICKET_FONT_NAME}-Bold",
+            )
             self._ticket_font_name = self._TICKET_FONT_NAME
         else:
             logging.info("Ticket font: not found — using Helvetica fallback")
@@ -397,6 +412,6 @@ class TicketFiller:
                 the baseline.
         """
         c.setFillColorRGB(0.0, 0.0, 0.0)
-        c.setFont(self._ticket_font_name, self._TICKET_FONT_SIZE)
+        c.setFont(f"{self._ticket_font_name}-Bold", self._TICKET_FONT_SIZE)
         baseline = zone["erase_y0"] + 2.0
         c.drawString(zone["x0"], baseline, text)
