@@ -43,12 +43,18 @@ _HANDWRITE_CANDIDATES = [
     "Bradley Hand Bold.ttf", "Noteworthy Bold.ttf", "Chalkboard.ttc",
     "Marker Felt Thin.ttf", "Apple Chancery.ttf", "Caladea-Italic.ttf",
     "Carlito-Italic.ttf", "DejaVuSerif-Italic.ttf", "FreeSerifItalic.ttf",
-    "FreeSansOblique.ttf",
+    "FreeSansOblique.ttf", "segoepr.ttf", "segoesc.ttf", "Inkfree.ttf",
+    "comic.ttf",
 ]
 
 _TICKET_FONT_CANDIDATES = [
-    "LiberationSans-Regular.ttf", "FreeSans.ttf", "DejaVuSans.ttf",
-    "NotoSans-Regular.ttf", "Arial.ttf",
+    # Windows — Microsoft Sans Serif (target ticket font)
+    "micross.ttf",
+    "LiberationSans-Regular.ttf",
+    "FreeSans.ttf",
+    "DejaVuSans.ttf",
+    "NotoSans-Regular.ttf",
+    "Arial.ttf",
 ]
 
 
@@ -142,11 +148,37 @@ class TicketFiller:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _clean_times(
-            time1: datetime.time, time2: datetime.time) -> tuple[str, str]:
-        # Convert times to total seconds from midnight to do math
+    def _clean_times(time1: datetime.time, time2: datetime.time | None = None) \
+            -> tuple[str, str]:
+        """
+        Calculates a randomized, realistic service interval based on provided 
+        start and end times.
+
+        This method calculates a midpoint between `time1` and `time2`, 
+        adding a small random variance so the resulting start time doesn't 
+        always fall on exact minutes (like :00 or :30). It then generates an 
+        end time that is 3 to 5 minutes after the calculated start time. 
+        If `time2` is not provided, it defaults to 30 minutes after `time1`.
+
+        Args:
+            time1 (datetime.time): The initial starting time.
+            time2 (datetime.time | None, optional): The initial ending time. 
+                Defaults to None (which falls back to exactly 30 minutes 
+                after time1).
+
+        Returns:
+            tuple[str, str]: A tuple containing the newly generated start time 
+            and end time, both formatted as strings in the "HH : MM : SS" 
+            format.
+        """
+        # Convert time1 to total seconds from midnight to do math
         t1_sec = time1.hour * 3600 + time1.minute * 60 + time1.second
-        t2_sec = time2.hour * 3600 + time2.minute * 60 + time2.second
+
+        # If time2 is missing, default it to time1 + 30 minutes (1800 seconds)
+        if time2 is None:
+            t2_sec = t1_sec + 1800
+        else:
+            t2_sec = time2.hour * 3600 + time2.minute * 60 + time2.second
 
         # Find the midpoint and +/- 30 seconds to ensure new_time1
         # doesn't always end in :00 or :30
@@ -217,6 +249,15 @@ class TicketFiller:
         if ticket_path:
             pdfmetrics.registerFont(
                 TTFont(self._TICKET_FONT_NAME, ticket_path))
+            # Register bold variant using the same file
+            # (ReportLab synthesizes bold)
+            pdfmetrics.registerFont(
+                TTFont(f"{self._TICKET_FONT_NAME}-Bold", ticket_path))
+            pdfmetrics.registerFontFamily(
+                self._TICKET_FONT_NAME,
+                normal=self._TICKET_FONT_NAME,
+                bold=f"{self._TICKET_FONT_NAME}-Bold",
+            )
             self._ticket_font_name = self._TICKET_FONT_NAME
         else:
             logging.info("Ticket font: not found — using Helvetica fallback")
@@ -371,6 +412,6 @@ class TicketFiller:
                 the baseline.
         """
         c.setFillColorRGB(0.0, 0.0, 0.0)
-        c.setFont(self._ticket_font_name, self._TICKET_FONT_SIZE)
+        c.setFont(f"{self._ticket_font_name}-Bold", self._TICKET_FONT_SIZE)
         baseline = zone["erase_y0"] + 2.0
         c.drawString(zone["x0"], baseline, text)
