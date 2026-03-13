@@ -137,10 +137,13 @@ class EndesaFormFiller:
                 "value": fields.get("service_num")
             },
             "start_time": {
-                "value": fields.get("start_time")
+                "value": fields.get("start_time").strftime("%H:%M"),
+                "styles": {"font_size": 8}
             },
             "end_time": {
-                "value": fields.get("end_time")},
+                "value": fields.get("end_time").strftime("%H:%M"),
+                "styles": {"font_size": 8}
+            },
             "technician": {
                 "value": fields.get("technician")},
             "company": {
@@ -328,7 +331,6 @@ class EndesaFormFiller:
                 fs = font_size if font_size is not None else DEFAULT_FONT_SIZE
                 available_width = x1 - x0 - 4
                 c.setFont(self._font_name, fs)
-                # ← set per field, not globally
                 c.setFillColorRGB(*self.INK_COLOR)
 
                 display = content

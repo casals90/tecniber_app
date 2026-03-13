@@ -3,6 +3,7 @@ import pathlib
 import random
 import tempfile
 import zipfile
+from datetime import datetime, timedelta
 from typing import Any
 
 from src.endesa import form as endesa_form
@@ -45,6 +46,31 @@ def get_random_image(folder_path: str | pathlib.Path) -> pathlib.Path | None:
     return selected_image
 
 
+def clean_times(
+    start_time: datetime.time, end_time: datetime.time | None) \
+        -> datetime.time:
+    """
+    Ensure a valid end time.
+
+    If ``end_time`` is None, it is set to 30 minutes after ``start_time``.
+    Otherwise, the provided ``end_time`` is returned unchanged.
+
+    Args:
+        start_time (datetime.time): The starting time.
+        end_time (datetime.time | None): The ending time. May be None.
+
+    Returns:
+        datetime.time: The resolved end time. If ``end_time`` was None,
+        the result is ``start_time`` plus 30 minutes.
+    """
+    if end_time is None:
+        dt = datetime.combine(datetime.today(), start_time)
+        dt += timedelta(minutes=30)
+        end_time = dt.time()
+
+    return end_time
+
+
 def execute(input_data: dict[str, Any], output_folder: pathlib.Path | str) \
         -> pathlib.Path:
     """
@@ -60,6 +86,11 @@ def execute(input_data: dict[str, Any], output_folder: pathlib.Path | str) \
         pathlib.Path: The absolute path to the generated ZIP file.
     """
     logger.info("Starting document generation process...")
+
+    if not input_data["end_time"]:
+        input_data["end_time"] = clean_times(
+            input_data["start_time"], input_data["end_time"])
+        logger.info(f"Set end_time to {input_data["end_time"]}")
 
     # Ensure the output directory exists
     out_dir = pathlib.Path(output_folder)

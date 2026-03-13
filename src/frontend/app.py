@@ -1,5 +1,5 @@
 import base64
-import json  # <-- NEW: Added json import
+import json
 import pathlib
 
 import streamlit as st
@@ -283,13 +283,11 @@ def main():
                     st.success(
                         f"✅ Servei **{form_data['service_num']}** generat correctament per al client **{form_data['client']}**!")
 
-                    # --- NEW: Write to config.json upon success ---
                     with open(settings.CONFIG_FILE, "w", encoding="utf-8") as f:
                         json.dump({
                             "images_folder": form_data["images_folder"],
                             "output_folder": form_data["output_folder"]
                         }, f, indent=4)
-                    # ----------------------------------------------
 
                     # Save folder paths to session state and reset the form
                     st.session_state.saved_images_folder = form_data["images_folder"]
